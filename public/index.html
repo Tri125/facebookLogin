@@ -10,7 +10,7 @@
 <script>
   window.fbAsyncInit = function() {
     FB.init({
-      appId      : 'appID-here',
+      appId      : '{{.appID}}',
       cookie     : true,
       xfbml      : true,
       version    : 'v2.10'
@@ -32,12 +32,20 @@ function checkLoginState() {
   FB.getLoginStatus(function(response) {
     console.log(response);
 
-    var payload = {"fbToken": response.authResponse.accessToken};
+    var payload = {"token": response.authResponse.accessToken};
 
     $.ajax({
-    	method: "PUT",
-    	url: "/login",
-    	data: JSON.stringify(payload)
+    	method: "POST",
+    	url: "http://localhost:8080?fields=first_name,last_name,email,locale",
+    	data: JSON.stringify(payload),
+        success: function(result){
+    	    console.log(result);
+        },
+        error: function(request, status, errorThrown){
+            console.log(status);
+            console.log(errorThrown);
+            console.log(request.responseText);
+        }
     });
   });
 }

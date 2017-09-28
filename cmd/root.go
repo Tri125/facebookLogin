@@ -26,6 +26,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -55,12 +56,12 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.facebookLogin.yaml)")
-	RootCmd.LocalFlags().IntVar(&port, "p", 8080, "Port which the http server will listen for traffic.")
-	RootCmd.LocalFlags().StringVar(&endpoint, "path", "/", "Endpoint where the http server will listen for traffic.")
-	RootCmd.LocalFlags().DurationVar(&timeout, "timeout", 15*time.Second, "Set the WriteTimeout and ReadTimeout value for the http server.")
-	RootCmd.LocalFlags().StringVar(&facebookSettings.AppID, "appID", "", "Set the App ID for your facebook application.")
-	RootCmd.LocalFlags().StringVar(&facebookSettings.AppSecret, "appSecret", "", "Set the App Secret for your facebook application.")
-	RootCmd.LocalFlags().BoolVar(&facebookSettings.EnableAppsecretProof, "proof", true, "Prevents malicious clients from making requests on your behalf if tokens are stolen. "+
+	RootCmd.Flags().IntVar(&port, "p", 8080, "Port which the http server will listen for traffic.")
+	RootCmd.Flags().StringVar(&endpoint, "path", "/", "Endpoint where the http server will listen for traffic.")
+	RootCmd.Flags().DurationVar(&timeout, "timeout", 15*time.Second, "Set the WriteTimeout and ReadTimeout value for the http server.")
+	RootCmd.Flags().StringVar(&facebookSettings.AppID, "appID", "", "Set the App ID for your facebook application.")
+	RootCmd.Flags().StringVar(&facebookSettings.AppSecret, "appSecret", "", "Set the App Secret for your facebook application.")
+	RootCmd.Flags().BoolVar(&facebookSettings.EnableAppsecretProof, "proof", true, "Prevents malicious clients from making requests on your behalf if tokens are stolen. "+
 		"Enabling the appsecret proof status will verify your graph API calls by generating a secret from your appSecret and the token. "+
 		"Make sure to change the setting of your facebook app to require app secret on every calls.")
 }
@@ -95,6 +96,7 @@ func RunHttpServer(path string, port int, timeout time.Duration, env *handler.En
 	addrs := ":" + strconv.Itoa(port)
 	r := mux.NewRouter()
 	r.HandleFunc(path, env.FacebookLoginHandler).Methods("POST")
+	r.Handle("/dev", http.StripPrefix("/dev", http.FileServer(http.Dir("./public"))))
 	r.HandleFunc(path, sink)
 	srv := &http.Server{
 		Handler:      r,
@@ -102,6 +104,8 @@ func RunHttpServer(path string, port int, timeout time.Duration, env *handler.En
 		WriteTimeout: timeout,
 		ReadTimeout:  timeout,
 	}
+	log.Printf("Listening on port %v", port)
+	log.Printf("Open http://localhost:%v/dev in a web browser to test.", port)
 	return srv.ListenAndServe()
 }
 
