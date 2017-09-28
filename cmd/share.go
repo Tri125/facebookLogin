@@ -2,6 +2,8 @@ package cmd
 
 import "time"
 
+const PUBLIC_DIR string = "./public"
+
 var (
 	port             int
 	cfgFile          string

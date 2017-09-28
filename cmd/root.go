@@ -16,6 +16,8 @@ package cmd
 
 import (
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -26,7 +28,6 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -94,10 +95,13 @@ func initConfig() {
 
 func RunHttpServer(path string, port int, timeout time.Duration, env *handler.Env) error {
 	addrs := ":" + strconv.Itoa(port)
+
 	r := mux.NewRouter()
 	r.HandleFunc(path, env.FacebookLoginHandler).Methods("POST")
-	r.Handle("/dev", http.StripPrefix("/dev", http.FileServer(http.Dir("./public"))))
-	r.HandleFunc(path, sink)
+	//r.Handle("/dev", http.StripPrefix("/dev", http.FileServer(http.Dir(PUBLIC_DIR))))
+	r.HandleFunc("/dev", indexHandler)
+	r.HandleFunc(path, apiSink)
+	r.NotFoundHandler = http.HandlerFunc(redirectToRoot)
 	srv := &http.Server{
 		Handler:      r,
 		Addr:         addrs,
@@ -109,7 +113,29 @@ func RunHttpServer(path string, port int, timeout time.Duration, env *handler.En
 	return srv.ListenAndServe()
 }
 
-func sink(w http.ResponseWriter, r *http.Request) {
+func apiSink(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
 	return
+}
+
+func redirectToRoot(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/dev", http.StatusSeeOther)
+}
+
+func loadTemplates() *template.Template {
+	return template.Must(template.ParseGlob(PUBLIC_DIR + "/*.html"))
+}
+
+var templates = loadTemplates()
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	params := struct {
+		AppID string
+	}{facebookSettings.AppID}
+	// you access the cached templates with the defined name, not the filename
+	err := templates.ExecuteTemplate(w, "indexPage", params)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

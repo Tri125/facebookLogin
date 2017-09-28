@@ -1,3 +1,4 @@
+{{define "indexPage"}}
 <!DOCTYPE html>
 <html>
 <head>
@@ -10,7 +11,7 @@
 <script>
   window.fbAsyncInit = function() {
     FB.init({
-      appId      : '{{.appID}}',
+      appId      : '{{.AppID}}',
       cookie     : true,
       xfbml      : true,
       version    : 'v2.10'
@@ -59,3 +60,4 @@ function checkLoginState() {
 </body>
 
 </html>
+{{end}}
