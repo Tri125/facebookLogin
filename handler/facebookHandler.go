@@ -2,9 +2,9 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
-	"fmt"
 	fb "github.com/huandu/facebook"
 )
 

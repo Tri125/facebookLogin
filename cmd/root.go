@@ -37,6 +37,15 @@ var RootCmd = &cobra.Command{
 	Long: `facebookLogin is a standalone proxy to make request to facebook graphAPI.
 
 You can use the program to run an efficient server side proxy to query data about a particular user.`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(facebookSettings.AppID) == 0 {
+			return fmt.Errorf("AppID is missing.")
+		}
+		if len(facebookSettings.AppSecret) == 0 {
+			return fmt.Errorf("AppSecret is missing.")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fbApp := handler.CreateFacebookClient(facebookSettings.AppID, facebookSettings.AppSecret, facebookSettings.RedirectUri, facebookSettings.EnableAppsecretProof)
 		env := &handler.Env{fbApp}
@@ -48,7 +57,6 @@ You can use the program to run an efficient server side proxy to query data abou
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
