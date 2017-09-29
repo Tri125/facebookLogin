@@ -1,0 +1,20 @@
+language: go
+go:
+- 1.9.x
+before_install:
+- go get -u github.com/golang/dep/cmd/dep
+install:
+- dep ensure
+script:
+- go build -ldflags="-s -X main.version=$TRAVIS_TAG" -o facebookLogin-$TRAVIS_TAG.linux-amd64 github.com/Tri125/facebookLogin
+- GOOS=windows GOARCH=amd64 go build -ldflags="-s -X main.version=$TRAVIS_TAG" -o facebookLogin-$TRAVIS_TAG.windows-amd64.exe github.com/Tri125/facebookLogin
+deploy:
+  provider: releases
+  skip_cleanup: true
+  file: 
+  - facebookLogin-$TRAVIS_TAG.linux-amd64
+  - facebookLogin-$TRAVIS_TAG.windows-amd64.exe
+  on:
+    name: facebookLogin $TRAVIS_TAG
+    repo: Tri125/facebookLogin
+    tags: true

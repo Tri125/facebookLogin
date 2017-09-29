@@ -18,6 +18,11 @@ import (
 	"github.com/Tri125/facebookLogin/cmd"
 )
 
+/*
+Set this variable with go build with the -ldflags="-X main.version=<value>" parameter.
+*/
+var version = "undefined"
+
 func main() {
 	cmd.Execute()
 }
