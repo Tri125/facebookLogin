@@ -11,6 +11,8 @@ script:
 deploy:
   provider: releases
   skip_cleanup: true
+api_key:
+    secure: HhMnn7SYMHNfvo0zSlh9cdMlNJM11J7xvvp3oifX2LM73V76FOUwAOvU+YNP3A1wlJBQT4prb6QGvaYArsStjp+vl5Tx1fw9eAtP0BxdGvkK9nxoJo27pN2NETtxIbrIYgMkRdKjj3+fY4dzTTmZVglI0rul9HiMXQajM3wd+7yE34EDj+Gpe7eslTbZmWZj6fg3jL6seqRTQYVbIoT9KzOdVbmJzy8RaFK0FEuB4rA4iERzhSaiAeXnIBcL//k2gnmjQYYo0qjhoFO8ynv6nN8CVDOIJkwsX4i+sCpI2VXookVxG2JIS1HftuGtMC0O8Qg+LYDA8+U9yi33Zsz6PvkyU9PxF/+4RTii5xvD6BYK9Qxe1J4rC2VvE8dx3OeI3ApBs0XGTazS62pldHn6s0DRE0a3hAaO0VN+ytzBHjqe0tOnfvHm7B7E3W85zhxdto3XQla9ipmLIL7F5aXiY6/Xz+jCDmpvu/DjQ/x+z2FeX9SVtbBMmerCdU7xpZhQIugLeZXVxhBvsbset9WtCpMgJvfILiVDUEmrlf4j5Gn3UplB9ChBRhAFPV+/U6lK0PW6IAkicrn0xHxGFhmKUe4CT0SSPeak4AqDdAE68F36ksQ2n17kxuRbvzwqTx1LZSlEFeFD7jO3q6aO7Wml2f10+6mA1BbAmUuj+qqvmJo=
   file: 
   - facebookLogin-$TRAVIS_TAG.linux-amd64
   - facebookLogin-$TRAVIS_TAG.windows-amd64.exe
