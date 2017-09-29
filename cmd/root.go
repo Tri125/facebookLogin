@@ -16,11 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	"html/template"
-	"log"
-	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/Tri125/facebookLogin/handler"
@@ -28,15 +24,17 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
 )
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "facebookLogin",
-	Short: "facebookLogin is a standalone proxy to make request to facebook graphAPI.",
-	Long: `facebookLogin is a standalone proxy to make request to facebook graphAPI.
+	Short: "facebookLogin is a standalone proxy to make request to facebook graphAPI on the user node.",
+	Long: `facebookLogin is a standalone proxy to make request to facebook graphAPI on the user node.
 
-You can use the program to run an efficient server side proxy to query data about a particular user.`,
+You can use the program to run server a side proxy to query simple data about users who authorized your app.
+This is ideal to quickly deploy a server-side login flow if an official SDK isn't available for you.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(facebookSettings.AppID) == 0 {
 			return fmt.Errorf("AppID is missing.")
@@ -46,10 +44,10 @@ You can use the program to run an efficient server side proxy to query data abou
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		fbApp := handler.CreateFacebookClient(facebookSettings.AppID, facebookSettings.AppSecret, facebookSettings.RedirectUri, facebookSettings.EnableAppsecretProof)
 		env := &handler.Env{fbApp}
-		RunHttpServer(endpoint, port, timeout, env)
+		return runRoot(env)
 	},
 }
 
@@ -65,12 +63,12 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.facebookLogin.yaml)")
-	RootCmd.Flags().IntVar(&port, "p", 8080, "Port which the http server will listen for traffic.")
-	RootCmd.Flags().StringVar(&endpoint, "path", "/", "Endpoint where the http server will listen for traffic.")
-	RootCmd.Flags().DurationVar(&timeout, "timeout", 15*time.Second, "Set the WriteTimeout and ReadTimeout value for the http server.")
-	RootCmd.Flags().StringVar(&facebookSettings.AppID, "appID", "", "Set the App ID for your facebook application.")
-	RootCmd.Flags().StringVar(&facebookSettings.AppSecret, "appSecret", "", "Set the App Secret for your facebook application.")
-	RootCmd.Flags().BoolVar(&facebookSettings.EnableAppsecretProof, "proof", true, "Prevents malicious clients from making requests on your behalf if tokens are stolen. "+
+	RootCmd.PersistentFlags().IntVar(&port, "p", 8080, "Port which the http server will listen for traffic.")
+	RootCmd.PersistentFlags().StringVar(&endpoint, "path", "/", "Endpoint where the http server will listen for traffic.")
+	RootCmd.PersistentFlags().DurationVar(&timeout, "timeout", 15*time.Second, "Set the WriteTimeout and ReadTimeout value for the http server.")
+	RootCmd.PersistentFlags().StringVar(&facebookSettings.AppID, "appID", "", "Set the App ID for your facebook application.")
+	RootCmd.PersistentFlags().StringVar(&facebookSettings.AppSecret, "appSecret", "", "Set the App Secret for your facebook application.")
+	RootCmd.PersistentFlags().BoolVar(&facebookSettings.EnableAppsecretProof, "proof", true, "Prevents malicious clients from making requests on your behalf if tokens are stolen. "+
 		"Enabling the appsecret proof status will verify your graph API calls by generating a secret from your appSecret and the token. "+
 		"Make sure to change the setting of your facebook app to require app secret on every calls.")
 }
@@ -101,49 +99,15 @@ func initConfig() {
 	}
 }
 
-func RunHttpServer(path string, port int, timeout time.Duration, env *handler.Env) error {
-	addrs := ":" + strconv.Itoa(port)
-
+func runRoot(env *handler.Env) error {
 	r := mux.NewRouter()
-	r.HandleFunc(path, env.FacebookLoginHandler).Methods("POST")
-	//r.Handle("/dev", http.StripPrefix("/dev", http.FileServer(http.Dir(PUBLIC_DIR))))
-	r.HandleFunc("/dev", indexHandler)
-	r.HandleFunc(path, apiSink)
-	r.NotFoundHandler = http.HandlerFunc(redirectToRoot)
-	srv := &http.Server{
-		Handler:      r,
-		Addr:         addrs,
-		WriteTimeout: timeout,
-		ReadTimeout:  timeout,
-	}
+	r = setProxyRouter(r, endpoint, env)
 	log.Printf("Listening on port %v", port)
-	log.Printf("Open http://localhost:%v/dev in a web browser to test.", port)
-	return srv.ListenAndServe()
+	return runHTTPServer(r, port, timeout, env)
 }
 
-func apiSink(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusMethodNotAllowed)
-	return
-}
-
-func redirectToRoot(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/dev", http.StatusSeeOther)
-}
-
-func loadTemplates() *template.Template {
-	return template.Must(template.ParseGlob(PUBLIC_DIR + "/*.html"))
-}
-
-var templates = loadTemplates()
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	params := struct {
-		AppID string
-	}{facebookSettings.AppID}
-	// you access the cached templates with the defined name, not the filename
-	err := templates.ExecuteTemplate(w, "indexPage", params)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+func setProxyRouter(r *mux.Router, path string, env *handler.Env) *mux.Router {
+	r.HandleFunc(path, env.FacebookLoginHandler).Methods("POST")
+	r.HandleFunc(path, apiSink)
+	return r
 }
